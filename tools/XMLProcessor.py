@@ -5,6 +5,7 @@ Created on Oct 4, 2016
 @author: fu
 '''
 
+import os
 import numpy as np
 import xml.sax as sax
 from Log import Log
@@ -13,6 +14,7 @@ from Log import Log
 class SaxHandler(sax.ContentHandler):
     def __init__(self, log=None):
         self.isComplete = True # whether data of a structure in vasprun.xml file is complete
+        
         self.isAtominfo = False # <atominfo>
         self.isAtomNum = False # <atoms>
         self.isAtoms = False # <array name="atoms">
@@ -42,7 +44,7 @@ class SaxHandler(sax.ContentHandler):
         self.forces = []  # [structure, forceOfatom, xyz]
         self.energy = []  # [structure, energy, e_fr/e_wo/e_0]
         
-        self.counter = -1
+        self.counter = -1 # counter of structure in vasprun.xml
         
         # log object
         if log == None:
@@ -104,6 +106,13 @@ class SaxHandler(sax.ContentHandler):
                    
         if name == "calculation":
             self.isCalculation = False
+            
+            # check data integrity
+            # 1. pop illegal data
+            if not(self.isComplete) or ():
+                self.lattice.pop(-1)
+                self.forces.pop(-1)
+                self.energy.pop(-1)
 
         if self.isCalculation:
             if name == "structure":
@@ -154,6 +163,7 @@ class SaxHandler(sax.ContentHandler):
                         string = "Warning! value of position will be set to 0.0"
                         print string
                         self.log.write(string)
+                        self.isComplete = False
                     else:
                         tmp.append(float(s0))
                 
@@ -165,19 +175,17 @@ class SaxHandler(sax.ContentHandler):
                 tmp = [float(s0) for s0 in content.split()]
             except ValueError:
                 # log information
-                string = "Force isn't a digit! %s" %content
+                string = "Force isn't a digit! '%s' -> 0.0; skipping" %content.strip()
                 print string
                 self.log.write(string)
+                self.isComplete = False
                 
                 tmp = content.split()
                 for i in xrange(0, len(tmp)):
                     try:
                         tmp[i] = float(tmp[i])
                     except ValueError:
-                        # log information
-                        string = "Warning! value will be set to 0.0"
-                        print string
-                        self.log.write(string)
+                        self.isComplete = False
                         
                         tmp[i] = 0.0
                         
@@ -190,7 +198,8 @@ class SaxHandler(sax.ContentHandler):
                 # log information
                 string = "Energy isn't a digit! %s" %content
                 print string
-                self.log.write(string)                
+                self.log.write(string)
+                self.isComplete = False                
                 
                 tmp = 0.0
                 
