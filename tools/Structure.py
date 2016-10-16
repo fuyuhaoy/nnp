@@ -109,6 +109,8 @@ class Structure(object):
             
             try:
                 if (lattice.shape[1]) == 3 and (forces.shape[1] == 3) and (lattice.shape[0] == forces.shape[0])+3 and (energy.shape[0] == 3):
+                    lattice=self.direct2cartesian(lattice)
+                    
                     out.write('# total energy = %14.10f eV\n\n' % energy[0])
             
                     out.write('CRYSTAL\n')
@@ -120,13 +122,11 @@ class Structure(object):
                     out.write('PRIMCOORD\n')
                     out.write('%d 1\n' %element.shape[0])
                     for i in xrange(0, forces.shape[0]):
-                        lattice=self.direct2cartesian(lattice)
                         out.write('%s  \t%14.10f \t%14.10f \t%14.10f  \t%14.10f \t%14.10f \t%14.10f\n' 
                                   %(element[i], lattice[i+3][0], lattice[i+3][1], lattice[i+3][2], forces[i][0], forces[i][1], forces[i][2]))
                     
             except IndexError:
-                self.log.write("dimension of data isn't consistent! lattice:"+
-                               str(lattice.shape)+"forces:"+str(forces.shape)+"energy:"+str(energy.shape))
+                self.log.write("lattice:"+str(lattice.shape)+"\tforces:"+str(forces.shape)+"\tenergy:"+str(energy.shape))
             
 # --------------------test--------------------
 s=Structure('/home/fu/workspace/nnp/Te/trainStructure')
